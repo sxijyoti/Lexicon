@@ -9,30 +9,39 @@
 
 
 ## Print
+```sh
 echo "hello"
 echo 1
+```
 
 ## Comments
+```sh
 #this is a comment
+```
 
 ## Variable Declaration
+```sh
 sprout x = 10
 x = 10
+```
 
 ## Conditional statement
-if <exp>{
+```sh if <exp>{
     <statement>
 } 
 else {
     <statement>
 }
+```
 
 ## expressions
+```sh
 logical: and or not
-arith: + - * / 
-
+arithmetic: + - * / 
+```
 
 ## Switch case
+```sh
 choose x { 
     when 1  
         whisper "One selected"  
@@ -44,3 +53,4 @@ choose x {
         whisper "Something else!"
 
 }
+```
