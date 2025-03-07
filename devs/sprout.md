@@ -26,7 +26,8 @@ x = 10
 ```
 
 ## Conditional statement
-```sh if <exp>{
+```sh
+if <exp>{
     <statement>
 } 
 else {
