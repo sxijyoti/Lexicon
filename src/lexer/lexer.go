@@ -1,9 +1,7 @@
-
-package main
+package lexer
 
 import "fmt"
 
 func main(){
-    fmt.Println("Lexer")
+	fmt.Println("Lexer")
 }
-
