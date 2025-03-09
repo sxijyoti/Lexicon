@@ -22,6 +22,7 @@ echo 1
 ## Variable Declaration
 ```sh
 sprout x = 10
+sprout x int = 10
 x = 10
 ```
 
