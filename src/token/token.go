@@ -55,6 +55,10 @@ const (
 	// Keywords
 	ECHO   = "ECHO"
 	SPROUT = "SPROUT"
+	IF     = "IF"
+	ELSE   = "ELSE"
+
+	COMMENT = "COMMENT"
 )
 
 var keywords = map[string]TokenType{
