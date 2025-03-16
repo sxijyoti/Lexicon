@@ -2,10 +2,10 @@
 ## **Detailed To-Do List**
 
 ### **Week 1: Lexer**
-- [ ] Define **sprout** language syntax (keywords, operators, literals).  
-- [ ] Implement a **tokenizer** in Go.  
-- [ ] Recognize **identifiers**, numbers, strings, operators, keywords.  
-- [ ] Handle **whitespace** and **comments**.  
+- [x] Define **sprout** language syntax (keywords, operators, literals).  
+- [x] Implement a **tokenizer** in Go.  
+- [x] Recognize **identifiers**, numbers, strings, operators, keywords.  
+- [x] Handle **whitespace** and **comments**.  
 - [ ] Write **unit tests** for lexer.  
 
 ### **Week 2: Parser**
