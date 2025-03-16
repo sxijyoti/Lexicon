@@ -9,7 +9,7 @@ type Lexer struct {
 	input   string // source code
 	currPos int    // current charecter position
 	nextPos int    // next charecter position
-	ch      byte
+	ch      rune
 }
 
 func New(input string) *Lexer {
@@ -25,7 +25,7 @@ func (l *Lexer) readChar() {
 	if l.nextPos >= len(l.input) {
 		l.ch = 0 // EOF
 	} else {
-		l.ch = l.input[l.nextPos]
+		l.ch = rune(l.input[l.nextPos])
 	}
 	l.currPos = l.nextPos
 	l.nextPos++
@@ -45,6 +45,24 @@ func (l *Lexer) readIdentifier() string {
 	return l.input[start:l.currPos]
 }
 
+func (l *Lexer) readNumber() string {
+	start := l.currPos
+	hasDot := false
+
+	for unicode.IsDigit(rune(l.ch)) || (l.ch == '.' && !hasDot) {
+		if l.ch == '.' {
+			// If we already encountered a dot, it's an error
+			if hasDot {
+				return l.input[start:l.currPos] // Return incomplete number
+			}
+			hasDot = true
+		}
+		l.readChar()
+	}
+
+	return l.input[start:l.currPos]
+}
+
 func (l *Lexer) readComment() string {
 	start := l.currPos
 	for l.ch != '\n' && l.ch != 0 {
@@ -53,36 +71,98 @@ func (l *Lexer) readComment() string {
 	return l.input[start:l.currPos]
 }
 
+// for multi character tokens like !=, ==
+func (l *Lexer) peekChar() rune {
+	if l.nextPos >= len(l.input) {
+		return 0 // EOF
+	}
+	return rune(l.input[l.nextPos])
+}
+
+// creates token.Token to reduce code duplication
+func (l *Lexer) newToken(tokenType token.TokenType, ch string) token.Token {
+	return token.Token{Type: tokenType, Literal: ch}
+}
+
 func (l *Lexer) NextToken() token.Token {
-	l.skipWhitespace()
 
 	var tok token.Token
+	l.skipWhitespace()
 
 	switch l.ch {
 	case '#':
 		comment := l.readComment()
 		tok = token.Token{Type: token.COMMENT, Literal: comment}
-	case '{':
-		tok = token.Token{Type: token.LBRACE, Literal: "{"}
-	case '}':
-		tok = token.Token{Type: token.RBRACE, Literal: "}"}
+	case '=':
+		if l.peekChar() == '=' {
+			ch := l.ch
+			l.readChar()
+			tok = l.newToken(token.EQ, string(ch)+string(l.ch))
+		} else {
+			tok = l.newToken(token.ASSIGN, "=")
+		}
+	case '!':
+		if l.peekChar() == '=' {
+			ch := l.ch
+			l.readChar()
+			tok = l.newToken(token.NOT_EQ, string(ch)+string(l.ch))
+		} else {
+			tok = l.newToken(token.LOGICAL_NOT, "!")
+		}
+	case '&':
+		if l.peekChar() == '&' {
+			l.readChar()
+			tok = l.newToken(token.LOGICAL_AND, "&&")
+		}
+	case '|':
+		if l.peekChar() == '|' {
+			l.readChar()
+			tok = l.newToken(token.LOGICAL_OR, "||")
+		}
+	case '+':
+		tok = l.newToken(token.PLUS, "+")
+	case '-':
+		tok = l.newToken(token.MINUS, "-")
+	case '*':
+		tok = l.newToken(token.MUL, "*")
+	case '/':
+		tok = l.newToken(token.DIV, "/")
+	case '%':
+		tok = l.newToken(token.MOD, "%")
+	case '>':
+		tok = l.newToken(token.GT, ">")
+	case '<':
+		tok = l.newToken(token.LT, "<")
 	case '(':
-		tok = token.Token{Type: token.LPAREN, Literal: "("}
+		tok = l.newToken(token.LPAREN, "(")
 	case ')':
-		tok = token.Token{Type: token.RPAREN, Literal: ")"}
+		tok = l.newToken(token.RPAREN, ")")
+	case '{':
+		tok = l.newToken(token.LBRACE, "{")
+	case '}':
+		tok = l.newToken(token.RBRACE, "}")
+	case ',':
+		tok = l.newToken(token.COMMA, ",")
+	case ';':
+		tok = l.newToken(token.SEMICOLON, ";")
+	case ':':
+		tok = l.newToken(token.COLON, ":")
+	case '.':
+		tok = l.newToken(token.DOT, ".")
 	case 0:
-		tok = token.Token{Type: token.EOF, Literal: ""}
+		tok.Literal = ""
+		tok.Type = token.EOF
 	default:
 		if unicode.IsLetter(rune(l.ch)) {
-			ident := l.readIdentifier()
-			if ident == "if" {
-				tok = token.Token{Type: token.IF, Literal: ident}
-			} else {
-				tok = token.Token{Type: token.IDENT, Literal: ident}
-			}
+			tok.Literal = l.readIdentifier()
+			tok.Type = token.LookupIdent(tok.Literal) // Efficient keyword check
+			return tok
+		} else if unicode.IsDigit(rune(l.ch)) {
+			tok.Literal = l.readNumber()
+			tok.Type = token.INT
 			return tok
 		} else {
-			tok = token.Token{Type: token.ILLEGAL, Literal: string(l.ch)}
+			tok = l.newToken(token.ILLEGAL, string(l.ch))
 		}
 	}
 
