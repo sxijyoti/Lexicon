@@ -65,6 +65,9 @@ var keywords = map[string]TokenType{
 	"echo":   ECHO,
 	"sprout": SPROUT,
 
+	"if":   IF,
+	"else": ELSE,
+
 	"and": LOGICAL_AND,
 	"or":  LOGICAL_OR,
 	"not": LOGICAL_NOT,
