@@ -9,7 +9,9 @@ func TestNextToken(t *testing.T) {
 	input := `sprout x = 5; 
 			if (x > 2) { 
 			x = x + 1; 
-			echo 1
+			}
+			else {
+			echo 1;
 			}`
 
 	expectedTokens := []struct {
@@ -34,8 +36,12 @@ func TestNextToken(t *testing.T) {
 		{token.PLUS, "+"},
 		{token.INT, "1"},
 		{token.SEMICOLON, ";"},
+		{token.RBRACE, "}"},
+		{token.ELSE, "else"},
+		{token.LBRACE, "{"},
 		{token.ECHO, "echo"},
 		{token.INT, "1"},
+		{token.SEMICOLON, ";"},
 		{token.RBRACE, "}"},
 		{token.EOF, ""},
 	}
