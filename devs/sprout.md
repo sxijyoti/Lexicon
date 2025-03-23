@@ -46,13 +46,13 @@ arithmetic: + - * /
 ```sh
 choose x { 
     when 1  
-        whisper "One selected"  
+        echo "One selected"  
     when 2  
-        whisper "Two chosen"  
+        echo "Two chosen"  
     when 3  
-        whisper "Three picked"  
+        echo "Three picked"  
     otherwise  
-        whisper "Something else!"
+        echo "Something else!"
 
 }
 ```

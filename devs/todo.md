@@ -6,17 +6,17 @@
 - [x] Implement a **tokenizer** in Go.  
 - [x] Recognize **identifiers**, numbers, strings, operators, keywords.  
 - [x] Handle **whitespace** and **comments**.  
-- [ ] Write **unit tests** for lexer.  
+- [x] Write **unit tests** for lexer.  
 
 ### **Week 2: Parser**
 - [ ] Define AST structures.  
 - [ ] Implement **recursive descent parser** or Pratt parser.  
 - [ ] Parse:
-  - [ ] Variable declarations 
+  - [x] Variable declarations 
   - [ ] Print statements 
   - [ ] Arithmetic expressions 
   - [ ] Logical comparisons 
-  - [ ] Conditionals 
+  - [x] Conditionals 
 - [ ] Write **unit tests** for parser.  
 
 ### **Week 3: Interpreter**
