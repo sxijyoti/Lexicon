@@ -1,9 +1,11 @@
 package parser
 
 import (
+	"fmt"
 	"lexicon/src/ast"
 	"lexicon/src/lexer"
 	"lexicon/src/token"
+	"strconv"
 )
 
 type Parser struct {
@@ -53,6 +55,8 @@ func (p *Parser) parseStatement() ast.Statement {
 		return p.parseAssignment()
 	case token.SPROUT:
 		return p.parseVariableDeclaration()
+	case token.ECHO:
+		return p.parsePrintStatement()
 	case token.IF:
 		return p.parseIfExpression()
 	default:
@@ -78,7 +82,7 @@ func (p *Parser) parseVariableDeclaration() *ast.VariableDeclaration {
 	}
 
 	p.nextToken()
-	stmt.Value = &ast.IntegerLiteral{Token: p.currToken} // TODO: parse actual expressions
+	stmt.Value = p.parseExpression(LOWEST)
 	return stmt
 }
 
@@ -92,7 +96,7 @@ func (p *Parser) parseAssignment() *ast.VariableDeclaration {
 	}
 
 	p.nextToken()
-	stmt.Value = &ast.IntegerLiteral{Token: p.currToken} // TODO: parse actual expressions
+	stmt.Value = p.parseExpression(LOWEST)
 	return stmt
 }
 
@@ -104,8 +108,7 @@ func (p *Parser) parseIfExpression() *ast.IfExpression {
 		return nil
 	}
 	p.nextToken()
-	expr.Condition = &ast.Identifier{Token: p.currToken, Value: p.currToken.Literal}
-
+	expr.Condition = p.parseExpression(LOWEST)
 	if !p.expectPeek(token.RPAREN) {
 		return nil
 	}
@@ -139,4 +142,201 @@ func (p *Parser) parseBlockStatement() *ast.BlockStatement {
 	}
 
 	return block
+}
+
+// echo "Hello"
+func (p *Parser) parsePrintStatement() *ast.PrintStatement {
+	stmt := &ast.PrintStatement{Token: p.currToken}
+	p.nextToken()
+	stmt.Value = p.parseExpression(LOWEST)
+	return stmt
+}
+
+// Arithmetic & Logical Expressions
+// precedence constants and mapping
+const (
+	_ int = iota
+	LOWEST
+	LOGICAL_OR  // or, ||
+	LOGICAL_AND // and, &&
+	EQUALITY    // ==, !=
+	COMPARISON  // <, >, <=, >=
+	SUM         // +, -
+	PRODUCT     // *, /, %
+	EXPONENT    // **
+	PREFIX      // -X, not X
+)
+
+var precedences = map[token.TokenType]int{
+	// Logical Operators
+	token.LOGICAL_OR:  LOGICAL_OR,
+	token.LOGICAL_AND: LOGICAL_AND,
+	token.OR:          LOGICAL_OR,
+	token.AND:         LOGICAL_AND,
+
+	// Comparison Operators
+	token.EQ:     EQUALITY,
+	token.NOT_EQ: EQUALITY,
+	token.LT:     COMPARISON,
+	token.GT:     COMPARISON,
+	token.LTE:    COMPARISON,
+	token.GTE:    COMPARISON,
+
+	// Arithmetic Operators
+	token.PLUS:  SUM,
+	token.MINUS: SUM,
+	token.MUL:   PRODUCT,
+	token.DIV:   PRODUCT,
+	token.MOD:   PRODUCT,
+	token.EXP:   EXPONENT,
+}
+
+func (p *Parser) parseExpression(precedence int) ast.Expression {
+	var leftExp ast.Expression
+
+	switch p.currToken.Type {
+	case token.INT:
+		leftExp = p.parseIntegerLiteral()
+	case token.FLOAT:
+		leftExp = p.parseFloatLiteral()
+	case token.IDENT:
+		leftExp = p.parseIdentifier()
+	case token.MINUS, token.LOGICAL_NOT, token.NOT:
+		leftExp = p.parsePrefixExpression()
+	case token.STRING:
+		leftExp = p.parseStringLiteral()
+	case token.TRUE, token.FALSE:
+		leftExp = p.parseBooleanLiteral()
+	case token.LPAREN:
+		leftExp = p.parseGroupedExpression()
+	default:
+		return nil
+	}
+
+	for precedence < p.peekPrecedence() {
+		switch p.peekToken.Type {
+		case token.PLUS, token.MINUS, token.MUL, token.DIV, token.MOD, token.EXP,
+			token.EQ, token.NOT_EQ, token.LT, token.GT, token.LTE, token.GTE,
+			token.LOGICAL_AND, token.LOGICAL_OR,
+			token.AND, token.OR:
+			p.nextToken()
+			leftExp = p.parseInfixExpression(leftExp)
+		default:
+			return leftExp
+		}
+	}
+
+	return leftExp
+}
+
+// handle expressions in parenthesis
+func (p *Parser) parseGroupedExpression() ast.Expression {
+	p.nextToken()
+	exp := p.parseExpression(LOWEST)
+	if !p.expectPeek(token.RPAREN) {
+		return nil
+	}
+
+	return exp
+}
+
+func (p *Parser) parseInfixExpression(left ast.Expression) ast.Expression {
+	expr := &ast.InfixExpression{
+		Token:    p.currToken,
+		Left:     left,
+		Operator: p.normalizeLogicalOperator(p.currToken.Literal), // to handle multiple ways of writing logical operators
+	}
+
+	precedence := p.currPrecedence()
+	p.nextToken()
+
+	// to parse parenthesis
+	if p.currToken.Type == token.LPAREN {
+		expr.Right = p.parseGroupedExpression()
+	} else {
+		expr.Right = p.parseExpression(precedence)
+	}
+
+	return expr
+}
+
+func (p *Parser) parsePrefixExpression() ast.Expression {
+	expr := &ast.PrefixExpression{
+		Token:    p.currToken,
+		Operator: p.normalizeLogicalOperator(p.currToken.Literal), // logical not condition
+	}
+
+	p.nextToken()
+
+	// to parse parenthesis
+	if p.currToken.Type == token.LPAREN {
+		expr.Right = p.parseGroupedExpression()
+	} else {
+		expr.Right = p.parseExpression(PREFIX)
+	}
+
+	return expr
+}
+
+func (p *Parser) parseBooleanLiteral() ast.Expression {
+	return &ast.BooleanLiteral{
+		Token: p.currToken,
+		Value: p.currToken.Type == token.TRUE,
+	}
+}
+
+func (p *Parser) parseIntegerLiteral() ast.Expression {
+	value, err := strconv.ParseInt(p.currToken.Literal, 10, 64)
+	if err != nil {
+		fmt.Printf("Could not parse %q as integer\n", p.currToken.Literal)
+		return nil
+	}
+	return &ast.IntegerLiteral{Token: p.currToken, Value: value}
+}
+
+func (p *Parser) parseFloatLiteral() ast.Expression {
+	value, err := strconv.ParseFloat(p.currToken.Literal, 64)
+	if err != nil {
+		fmt.Printf("Could not parse %q as float\n", p.currToken.Literal)
+		return nil
+	}
+	return &ast.FloatLiteral{
+		Token: p.currToken,
+		Value: value,
+	}
+}
+
+func (p *Parser) parseIdentifier() ast.Expression {
+	return &ast.Identifier{Token: p.currToken, Value: p.currToken.Literal}
+}
+
+func (p *Parser) parseStringLiteral() ast.Expression {
+	return &ast.StringLiteral{Token: p.currToken, Value: p.currToken.Literal}
+}
+
+func (p *Parser) currPrecedence() int {
+	if prec, ok := precedences[p.currToken.Type]; ok {
+		return prec
+	}
+	return LOWEST
+}
+
+func (p *Parser) peekPrecedence() int {
+	if prec, ok := precedences[p.peekToken.Type]; ok {
+		return prec
+	}
+	return LOWEST
+}
+
+func (p *Parser) normalizeLogicalOperator(op string) string {
+	switch op {
+	case "and", "&&":
+		return "&&"
+	case "or", "||":
+		return "||"
+	case "not", "!":
+		return "!"
+	default:
+		return op
+	}
 }

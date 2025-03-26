@@ -2,6 +2,7 @@ package lexer
 
 import (
 	"lexicon/src/token"
+	"strings"
 	"unicode"
 )
 
@@ -15,7 +16,6 @@ type Lexer struct {
 func New(input string) *Lexer {
 	l := new(Lexer)
 	l.input = input
-
 	l.readChar()
 	return l
 }
@@ -49,11 +49,10 @@ func (l *Lexer) readNumber() string {
 	start := l.currPos
 	hasDot := false
 
-	for unicode.IsDigit(rune(l.ch)) || (l.ch == '.' && !hasDot) {
+	for unicode.IsDigit(l.ch) || l.ch == '.' {
 		if l.ch == '.' {
-			// If we already encountered a dot, it's an error
 			if hasDot {
-				return l.input[start:l.currPos] // Return incomplete number
+				return "ERROR: Multiple decimal points in number"
 			}
 			hasDot = true
 		}
@@ -111,28 +110,52 @@ func (l *Lexer) NextToken() token.Token {
 		}
 	case '&':
 		if l.peekChar() == '&' {
+			ch := l.ch
 			l.readChar()
-			tok = l.newToken(token.LOGICAL_AND, "&&")
+			tok = l.newToken(token.LOGICAL_AND, string(ch)+string(l.ch))
+		} else {
+			tok = l.newToken(token.ILLEGAL, "&")
 		}
 	case '|':
 		if l.peekChar() == '|' {
+			ch := l.ch
 			l.readChar()
-			tok = l.newToken(token.LOGICAL_OR, "||")
+			tok = l.newToken(token.LOGICAL_OR, string(ch)+string(l.ch))
+		} else {
+			tok = l.newToken(token.ILLEGAL, "|")
+		}
+	case '>':
+		if l.peekChar() == '=' {
+			ch := l.ch
+			l.readChar()
+			tok = l.newToken(token.GTE, string(ch)+string(l.ch))
+		} else {
+			tok = l.newToken(token.GT, ">")
+		}
+	case '<':
+		if l.peekChar() == '=' {
+			ch := l.ch
+			l.readChar()
+			tok = l.newToken(token.LTE, string(ch)+string(l.ch))
+		} else {
+			tok = l.newToken(token.LT, "<")
 		}
 	case '+':
 		tok = l.newToken(token.PLUS, "+")
 	case '-':
 		tok = l.newToken(token.MINUS, "-")
 	case '*':
-		tok = l.newToken(token.MUL, "*")
+		if l.peekChar() == '*' {
+			ch := l.ch
+			l.readChar()
+			tok = l.newToken(token.EXP, string(ch)+string(l.ch))
+		} else {
+			tok = l.newToken(token.MUL, "*")
+		}
 	case '/':
 		tok = l.newToken(token.DIV, "/")
 	case '%':
 		tok = l.newToken(token.MOD, "%")
-	case '>':
-		tok = l.newToken(token.GT, ">")
-	case '<':
-		tok = l.newToken(token.LT, "<")
 	case '(':
 		tok = l.newToken(token.LPAREN, "(")
 	case ')':
@@ -149,6 +172,8 @@ func (l *Lexer) NextToken() token.Token {
 		tok = l.newToken(token.COLON, ":")
 	case '.':
 		tok = l.newToken(token.DOT, ".")
+	case '"':
+		return l.readString()
 	case 0:
 		tok.Literal = ""
 		tok.Type = token.EOF
@@ -156,6 +181,14 @@ func (l *Lexer) NextToken() token.Token {
 		if unicode.IsLetter(rune(l.ch)) {
 			tok.Literal = l.readIdentifier()
 			tok.Type = token.LookupIdent(tok.Literal) // Efficient keyword check
+
+			// Handle boolean literals
+			if tok.Literal == "true" {
+				tok.Type = token.TRUE
+			} else if tok.Literal == "false" {
+				tok.Type = token.FALSE
+			}
+
 			return tok
 		} else if unicode.IsDigit(rune(l.ch)) {
 			tok.Literal = l.readNumber()
@@ -168,4 +201,48 @@ func (l *Lexer) NextToken() token.Token {
 
 	l.readChar()
 	return tok
+}
+
+func (l *Lexer) readString() token.Token {
+	l.readChar()
+
+	var value strings.Builder
+	escaped := false
+
+	for l.ch != 0 {
+		if escaped {
+			switch l.ch {
+			case 'n':
+				value.WriteRune('\n')
+			case 't':
+				value.WriteRune('\t')
+			case 'r':
+				value.WriteRune('\r')
+			case '"':
+				value.WriteRune('"')
+			case '\\':
+				value.WriteRune('\\')
+			default:
+				// Unrecognized escape sequence, could be an error
+				value.WriteRune('\\')
+				value.WriteRune(l.ch)
+			}
+			escaped = false
+		} else if l.ch == '\\' {
+			escaped = true
+		} else if l.ch == '"' {
+			break
+		} else {
+			value.WriteRune(l.ch)
+		}
+		l.readChar()
+	}
+
+	if l.ch != '"' {
+		// Unterminated string
+		return token.Token{Type: token.ILLEGAL, Literal: "Unterminated string"}
+	}
+
+	l.readChar() // consume closing quote
+	return token.Token{Type: token.STRING, Literal: value.String()}
 }

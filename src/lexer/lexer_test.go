@@ -12,6 +12,9 @@ func TestNextToken(t *testing.T) {
 			}
 			else {
 			echo 1;
+			}
+			if ( x == 1) {
+				x = "hello";
 			}`
 
 	expectedTokens := []struct {
@@ -41,6 +44,18 @@ func TestNextToken(t *testing.T) {
 		{token.LBRACE, "{"},
 		{token.ECHO, "echo"},
 		{token.INT, "1"},
+		{token.SEMICOLON, ";"},
+		{token.RBRACE, "}"},
+		{token.IF, "if"},
+		{token.LPAREN, "("},
+		{token.IDENT, "x"},
+		{token.EQ, "=="},
+		{token.INT, "1"},
+		{token.RPAREN, ")"},
+		{token.LBRACE, "{"},
+		{token.IDENT, "x"},
+		{token.ASSIGN, "="},
+		{token.STRING, "hello"},
 		{token.SEMICOLON, ";"},
 		{token.RBRACE, "}"},
 		{token.EOF, ""},

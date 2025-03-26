@@ -16,6 +16,7 @@ const (
 	INT        = "INT"
 	STRING     = "STRING"
 	FLOAT      = "FLOAT"
+	BOOL       = "BOOL"
 	TYPE_IDENT = "TYPE_IDENT"
 
 	// Operators
@@ -25,12 +26,15 @@ const (
 	MUL    = "*"
 	DIV    = "/"
 	MOD    = "%"
+	EXP    = "**"
 
 	// Comparison Operators
 	GT     = ">"
 	LT     = "<"
 	EQ     = "=="
 	NOT_EQ = "!="
+	LTE    = "<="
+	GTE    = ">="
 
 	// Bitwise Operators
 	// XOR = "^"
@@ -39,9 +43,17 @@ const (
 	// NOT = "!"
 
 	// Logical Operators
-	LOGICAL_AND = "AND"
-	LOGICAL_OR  = "OR"
-	LOGICAL_NOT = "NOT"
+	LOGICAL_AND = "&&"
+	LOGICAL_OR  = "||"
+	LOGICAL_NOT = "!"
+
+	AND = "AND"
+	OR  = "OR"
+	NOT = "NOT"
+
+	// Boolean Literals
+	TRUE  = "TRUE"
+	FALSE = "FALSE"
 
 	COMMA     = ","
 	SEMICOLON = ";"
@@ -68,13 +80,17 @@ var keywords = map[string]TokenType{
 	"if":   IF,
 	"else": ELSE,
 
-	"and": LOGICAL_AND,
-	"or":  LOGICAL_OR,
+	"and": LOGICAL_AND, // alternate for &&
+	"or":  LOGICAL_OR,  // alternate for ||
 	"not": LOGICAL_NOT,
+
+	"true":  TRUE,
+	"false": FALSE,
 
 	"int":    TYPE_IDENT,
 	"float":  TYPE_IDENT,
 	"string": TYPE_IDENT,
+	"bool":   TYPE_IDENT,
 }
 
 // To check if the identifier is a keyword or not
