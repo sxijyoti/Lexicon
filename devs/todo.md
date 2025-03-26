@@ -9,15 +9,15 @@
 - [x] Write **unit tests** for lexer.  
 
 ### **Week 2: Parser**
-- [ ] Define AST structures.  
-- [ ] Implement **recursive descent parser** or Pratt parser.  
-- [ ] Parse:
+- [x] Define AST structures.  
+- [x] Implement **recursive descent parser** or Pratt parser.  
+- [x] Parse:
   - [x] Variable declarations 
-  - [ ] Print statements 
-  - [ ] Arithmetic expressions 
-  - [ ] Logical comparisons 
+  - [x] Print statements 
+  - [x] Arithmetic expressions 
+  - [x] Logical comparisons 
   - [x] Conditionals 
-- [ ] Write **unit tests** for parser.  
+- [x] Write **unit tests** for parser.  
 
 ### **Week 3: Interpreter**
 - [ ] Implement an **AST walker interpreter**.  

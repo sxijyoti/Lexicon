@@ -38,9 +38,21 @@ else {
 
 ## expressions
 ```sh
-logical: and or not
-arithmetic: + - * / 
+# logical: and or not
+sprout y = true || false;
+z = x and y;
 ```
+```sh
+# arithmetic: + - * / 
+sprout z = x + y;
+a = 3**2;
+```
+```sh
+# combination of operators
+z = x * (y + 2);
+result = (a + b) and (c * d);
+```
+
 
 ## Switch case
 ```sh
